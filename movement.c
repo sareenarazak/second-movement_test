@@ -45,10 +45,10 @@
 #include "evsys.h"
 #include "delay.h"
 #include "thermistor_driver.h"
-
 #include "movement_config.h"
 
 #include "movement_custom_signal_tunes.h"
+#include "rust_watch_face.h"
 
 #if __EMSCRIPTEN__
 #include <emscripten.h>
@@ -439,7 +439,10 @@ void movement_request_tick_frequency(uint8_t freq) {
 }
 
 void movement_illuminate_led(void) {
-    if (movement_state.settings.bit.led_duration != 0b111) {
+    printf("led button pressed - display message \n");
+    display_hello();
+    //test_watch_face();
+    /* if (movement_state.settings.bit.led_duration != 0b111) {
         movement_state.light_on = true;
         watch_set_led_color_rgb(movement_state.settings.bit.led_red_color | movement_state.settings.bit.led_red_color << 4,
                                 movement_state.settings.bit.led_green_color | movement_state.settings.bit.led_green_color << 4,
@@ -457,7 +460,7 @@ void movement_illuminate_led(void) {
             );
             movement_volatile_state.schedule_next_comp = true;
         }
-    }
+    }*/
 }
 
 void movement_force_led_on(uint8_t red, uint8_t green, uint8_t blue) {

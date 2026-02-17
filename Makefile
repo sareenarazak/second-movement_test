@@ -160,6 +160,9 @@ endif
 
 include watch-faces.mk
 
+RUST_LIB :=  ./librust_watch_test.a
+LIBS += $(RUST_LIB)
+
 SRCS += \
   ./movement.c \
 
