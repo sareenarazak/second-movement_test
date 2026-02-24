@@ -10,6 +10,7 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 const CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD: u16 = 2400;
+
 #[repr(C)]
 pub struct WatchDateTime {
     pub hour: u8,
@@ -78,8 +79,8 @@ unsafe extern "C" {
 
     fn watch_display_text_with_fallback(
         position: WatchPosition,
-        long: *const c_char,
-        short: *const c_char,
+        text: *const c_char,
+        fall_back: *const c_char,
     );
 
     fn watch_display_text(position: WatchPosition, text: *const c_char);
@@ -177,11 +178,12 @@ pub extern "C" fn clock_toggle_time_signal(state: *mut ClockState) {
         clock_indicate_time_signal(state);
     }
 }
+
 #[unsafe(no_mangle)]
 pub extern "C" fn clock_display_all(date_time: WatchDateTime) {
     unsafe {
         let mut buf: String<9> = String::new();
-
+        // bug display is wrong
         if movement_clock_mode_24h() == MovementClockMode::Mode024h {
             write!(
                 buf,
@@ -205,4 +207,9 @@ pub extern "C" fn clock_display_all(date_time: WatchDateTime) {
         watch_display_text(WatchPosition::TopRight, buf.as_ptr() as *const c_char);
         watch_display_text(WatchPosition::Bottom, buf[2..].as_ptr() as *const c_char);
     }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn clock_display_some(currentt: WatchDateTime, previous: WatchDateTime) {
+    unsafe {}
 }
