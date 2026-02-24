@@ -49,37 +49,11 @@ static void clock_indicate_alarm() {
     clock_indicate(WATCH_INDICATOR_SIGNAL, movement_alarm_enabled());
 }
 
-static void clock_indicate_time_signal(clock_state_t *state) {
-    printf("bell indicator \n");
-    clock_indicate(WATCH_INDICATOR_BELL, state->time_signal_enabled);
-}
-
-static void clock_indicate_24h() {
-    printf("12/24h indicator \n");
-    clock_indicate(WATCH_INDICATOR_24H, !!movement_clock_mode_24h());
-}
 
 static bool clock_is_pm(watch_date_time_t date_time) {
     return date_time.unit.hour >= 12;
 }
 
-static void clock_indicate_pm(watch_date_time_t date_time) {
-    printf("am/pmn indicatpor \n");
-    if (movement_clock_mode_24h()) { return; }
-    clock_indicate(WATCH_INDICATOR_PM, clock_is_pm(date_time));
-}
-
-static void clock_indicate_low_available_power(clock_state_t *state) {
-    // Set the low battery indicator if battery power is low
-    printf("low power indicatpr \n");
-    if (watch_get_lcd_type() == WATCH_LCD_TYPE_CUSTOM) {
-        // interlocking arrows imply "exchange" the battery.
-        clock_indicate(WATCH_INDICATOR_ARROWS, state->battery_low);
-    } else {
-        // LAP indicator on classic LCD is an adequate fallback.
-        clock_indicate(WATCH_INDICATOR_LAP, state->battery_low);
-    }
-}
 
 static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
     date_time.unit.hour %= 12;
@@ -90,7 +64,7 @@ static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
 
     return date_time;
 }
-
+/*
 static void clock_check_battery_periodically(clock_state_t *state, watch_date_time_t date_time) {
     // check the battery voltage once a day
     if (date_time.unit.day == state->last_battery_check) { return; }
@@ -102,11 +76,6 @@ static void clock_check_battery_periodically(clock_state_t *state, watch_date_ti
     state->battery_low = voltage < CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD;
 
     clock_indicate_low_available_power(state);
-}
-
-static void clock_toggle_time_signal(clock_state_t *state) {
-    state->time_signal_enabled = !state->time_signal_enabled;
-    clock_indicate_time_signal(state);
 }
 
 static void clock_display_all(watch_date_time_t date_time) {
@@ -126,7 +95,7 @@ static void clock_display_all(watch_date_time_t date_time) {
     watch_display_text(WATCH_POSITION_TOP_RIGHT, buf);
     watch_display_text(WATCH_POSITION_BOTTOM, buf + 2);
 }
-
+*/
 static bool clock_display_some(watch_date_time_t current, watch_date_time_t previous) {
     if ((current.reg >> 6) == (previous.reg >> 6)) {
         // everything before seconds is the same, don't waste cycles setting those segments.
@@ -163,15 +132,20 @@ static bool clock_display_some(watch_date_time_t current, watch_date_time_t prev
 static void clock_display_clock(clock_state_t *state, watch_date_time_t current) {
     if (!clock_display_some(current, state->date_time.previous)) {
         if (movement_clock_mode_24h() == MOVEMENT_CLOCK_MODE_12H) {
+        printf("display clock -- rs clock indicate pm\n");
             clock_indicate_pm(current);
             current = clock_24h_to_12h(current);
         }
+
+        printf("yay - rs display all\n");
         clock_display_all(current);
     }
 }
 
 static void clock_display_low_energy(watch_date_time_t date_time) {
     if (movement_clock_mode_24h() == MOVEMENT_CLOCK_MODE_12H) {
+
+        printf(" display low energy - rs clock indicate pm\n");
         clock_indicate_pm(date_time);
         date_time = clock_24h_to_12h(date_time);
     }
@@ -221,8 +195,11 @@ void clock_face_activate(void *context) {
 
     clock_stop_tick_tock_animation();
 
+    printf("rs clock indicate time signal \n");
     clock_indicate_time_signal(state);
     clock_indicate_alarm();
+
+    printf("rs clock indicate 24h\n");
     clock_indicate_24h();
 
     watch_set_colon();
@@ -246,12 +223,14 @@ bool clock_face_loop(movement_event_t event, void *context) {
 
             clock_display_clock(state, current);
 
+
             clock_check_battery_periodically(state, current);
 
             state->date_time.previous = current;
 
             break;
         case EVENT_ALARM_LONG_PRESS:
+            printf("rs toggle time signal\n");
             clock_toggle_time_signal(state);
             break;
         case EVENT_BACKGROUND_TASK:

@@ -19,6 +19,7 @@ pub struct WatchDateTime {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct ClockState {
     time_signal_enabled: bool,
     battery_low: bool,
@@ -92,10 +93,11 @@ pub extern "C" fn clock_indicate(indicator: WatchIndicator, on: bool) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_indicate_time_signal(state: ClockState) {
-    clock_indicate(WatchIndicator::Signal, state.time_signal_enabled);
+pub extern "C" fn clock_indicate_time_signal(state: *const ClockState) {
+    unsafe {
+        clock_indicate(WatchIndicator::Signal, (*state).time_signal_enabled);
+    }
 }
-
 #[unsafe(no_mangle)]
 pub extern "C" fn clock_indicate_24h() {
     unsafe {
@@ -118,9 +120,22 @@ pub extern "C" fn clock_indicate_pm(date_time: WatchDateTime) {
         }
     }
 }
-
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_indicate_low_available_power(state: ClockState) {
+pub extern "C" fn clock_check_battery_periodically(
+    state: *mut ClockState,
+    date_time: WatchDateTime,
+) {
+    unsafe {
+        if date_time.day == (*state).last_battery_check {
+            return;
+        }
+        (*state).last_battery_check = date_time.day;
+        (*state).battery_low = watch_get_vcc_voltage() < CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD;
+        clock_indicate_low_available_power(*state);
+    }
+}
+
+pub fn clock_indicate_low_available_power(state: ClockState) {
     unsafe {
         match watch_get_lcd_type() {
             WatchLcdType::Custom => {
@@ -132,8 +147,7 @@ pub extern "C" fn clock_indicate_low_available_power(state: ClockState) {
         }
     }
 }
-#[unsafe(no_mangle)]
-pub extern "C" fn clock_24h_to_12h(mut date_time: WatchDateTime) -> WatchDateTime {
+pub fn clock_24h_to_12h(mut date_time: WatchDateTime) -> WatchDateTime {
     date_time.hour %= 12;
 
     if date_time.hour == 0 {
@@ -143,27 +157,12 @@ pub extern "C" fn clock_24h_to_12h(mut date_time: WatchDateTime) -> WatchDateTim
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_check_battery_periodically(
-    mut state: ClockState,
-    date_time: WatchDateTime,
-) {
+pub extern "C" fn clock_toggle_time_signal(state: *mut ClockState) {
     unsafe {
-        if date_time.day == state.last_battery_check {
-            return;
-        }
-        state.last_battery_check = date_time.day;
-        let voltage: u16 = watch_get_vcc_voltage();
-        state.battery_low = voltage < CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD;
-
-        clock_indicate_low_available_power(state);
+        (*state).time_signal_enabled = !(*state).time_signal_enabled;
+        clock_indicate_time_signal(state);
     }
 }
-#[unsafe(no_mangle)]
-pub extern "C" fn clock_toggle_time_signal(mut state: ClockState) {
-    state.time_signal_enabled = !state.time_signal_enabled;
-    clock_indicate_time_signal(state);
-}
-
 #[unsafe(no_mangle)]
 pub extern "C" fn clock_display_all(date_time: WatchDateTime) {
     unsafe {
