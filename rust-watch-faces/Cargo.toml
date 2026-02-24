@@ -1,0 +1,13 @@
+[package]
+name = "clock_watchface_rs"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[profile.release]
+panic = "abort"
+
+[dependencies]
+heapless = "0.9.2"

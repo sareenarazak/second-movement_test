@@ -160,7 +160,7 @@ endif
 
 include watch-faces.mk
 
-RUST_LIB :=  ./librust_watch_test.a
+RUST_LIB :=  ./libclock_watchface_rs.a
 LIBS += $(RUST_LIB)
 
 SRCS += \

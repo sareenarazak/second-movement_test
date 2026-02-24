@@ -30,35 +30,32 @@
  * SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include "clock_face.h"
 #include "watch.h"
 #include "watch_utility.h"
 #include "watch_common_display.h"
-
+#include "clock_watch_face_rs.h"
 // 2.4 volts seems to offer adequate warning of a low battery condition?
 // refined based on user reports and personal observations; may need further adjustment.
 #ifndef CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD
 #define CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD 2400
 #endif
 
-static void clock_indicate(watch_indicator_t indicator, bool on) {
-    if (on) {
-        watch_set_indicator(indicator);
-    } else {
-        watch_clear_indicator(indicator);
-    }
-}
 
 static void clock_indicate_alarm() {
+    printf("alarm indicator \n");
     clock_indicate(WATCH_INDICATOR_SIGNAL, movement_alarm_enabled());
 }
 
 static void clock_indicate_time_signal(clock_state_t *state) {
+    printf("bell indicator \n");
     clock_indicate(WATCH_INDICATOR_BELL, state->time_signal_enabled);
 }
 
 static void clock_indicate_24h() {
+    printf("12/24h indicator \n");
     clock_indicate(WATCH_INDICATOR_24H, !!movement_clock_mode_24h());
 }
 
@@ -67,12 +64,14 @@ static bool clock_is_pm(watch_date_time_t date_time) {
 }
 
 static void clock_indicate_pm(watch_date_time_t date_time) {
+    printf("am/pmn indicatpor \n");
     if (movement_clock_mode_24h()) { return; }
     clock_indicate(WATCH_INDICATOR_PM, clock_is_pm(date_time));
 }
 
 static void clock_indicate_low_available_power(clock_state_t *state) {
     // Set the low battery indicator if battery power is low
+    printf("low power indicatpr \n");
     if (watch_get_lcd_type() == WATCH_LCD_TYPE_CUSTOM) {
         // interlocking arrows imply "exchange" the battery.
         clock_indicate(WATCH_INDICATOR_ARROWS, state->battery_low);
