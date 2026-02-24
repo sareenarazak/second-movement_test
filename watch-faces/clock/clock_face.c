@@ -44,17 +44,6 @@
 #endif
 
 
-static void clock_indicate_alarm() {
-    printf("alarm indicator \n");
-    clock_indicate(WATCH_INDICATOR_SIGNAL, movement_alarm_enabled());
-}
-
-
-static bool clock_is_pm(watch_date_time_t date_time) {
-    return date_time.unit.hour >= 12;
-}
-
-
 static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
     date_time.unit.hour %= 12;
 
@@ -64,38 +53,7 @@ static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
 
     return date_time;
 }
-/*
-static void clock_check_battery_periodically(clock_state_t *state, watch_date_time_t date_time) {
-    // check the battery voltage once a day
-    if (date_time.unit.day == state->last_battery_check) { return; }
 
-    state->last_battery_check = date_time.unit.day;
-
-    uint16_t voltage = watch_get_vcc_voltage();
-
-    state->battery_low = voltage < CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD;
-
-    clock_indicate_low_available_power(state);
-}
-
-static void clock_display_all(watch_date_time_t date_time) {
-    char buf[8 + 1];
-
-    snprintf(
-        buf,
-        sizeof(buf),
-        movement_clock_mode_24h() == MOVEMENT_CLOCK_MODE_024H ? "%02d%02d%02d%02d" : "%2d%2d%02d%02d",
-        date_time.unit.day,
-        date_time.unit.hour,
-        date_time.unit.minute,
-        date_time.unit.second
-    );
-
-    watch_display_text_with_fallback(WATCH_POSITION_TOP_LEFT, watch_utility_get_long_weekday(date_time), watch_utility_get_weekday(date_time));
-    watch_display_text(WATCH_POSITION_TOP_RIGHT, buf);
-    watch_display_text(WATCH_POSITION_BOTTOM, buf + 2);
-}
-*/
 static bool clock_display_some(watch_date_time_t current, watch_date_time_t previous) {
     if ((current.reg >> 6) == (previous.reg >> 6)) {
         // everything before seconds is the same, don't waste cycles setting those segments.
@@ -136,8 +94,6 @@ static void clock_display_clock(clock_state_t *state, watch_date_time_t current)
             clock_indicate_pm(current);
             current = clock_24h_to_12h(current);
         }
-
-        printf("yay - rs display all\n");
         clock_display_all(current);
     }
 }
