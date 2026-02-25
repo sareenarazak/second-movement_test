@@ -44,6 +44,7 @@
 #endif
 
 
+
 static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
     date_time.unit.hour %= 12;
 
@@ -52,6 +53,39 @@ static watch_date_time_t clock_24h_to_12h(watch_date_time_t date_time) {
     }
 
     return date_time;
+}
+/*
+static bool clock_display_some(watch_date_time_t current, watch_date_time_t previous) {
+    if ((current.reg >> 6) == (previous.reg >> 6)) {
+        // everything before seconds is the same, don't waste cycles setting those segments.
+
+        watch_display_character_lp_seconds('0' + current.unit.second / 10, 8);
+        watch_display_character_lp_seconds('0' + current.unit.second % 10, 9);
+
+        return true;
+
+    } else if ((current.reg >> 12) == (previous.reg >> 12)) {
+        // everything before minutes is the same.
+
+        char buf[4 + 1];
+
+        snprintf(
+            buf,
+            sizeof(buf),
+            "%02d%02d",
+            current.unit.minute,
+            current.unit.second
+        );
+
+        watch_display_text(WATCH_POSITION_MINUTES, buf);
+        watch_display_text(WATCH_POSITION_SECONDS, buf + 2);
+
+        return true;
+
+    } else {
+        // other stuff changed; let's do it all.
+        return false;
+    }
 }
 
 
@@ -65,7 +99,7 @@ static void clock_display_clock(clock_state_t *state, watch_date_time_t current)
         clock_display_all(current);
     }
 }
-
+*/
 static void clock_display_low_energy(watch_date_time_t date_time) {
     if (movement_clock_mode_24h() == MOVEMENT_CLOCK_MODE_12H) {
 
@@ -117,10 +151,13 @@ void clock_face_setup(uint8_t watch_face_index, void ** context_ptr) {
 void clock_face_activate(void *context) {
     clock_state_t *state = (clock_state_t *) context;
 
+    printf("clock face activate");
     clock_stop_tick_tock_animation();
 
     printf("rs clock indicate time signal \n");
     clock_indicate_time_signal(state);
+    
+    printf("rs call indicate alarm\n");
     clock_indicate_alarm();
 
     printf("rs clock indicate 24h\n");

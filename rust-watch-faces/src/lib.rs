@@ -224,9 +224,12 @@ pub fn clock_24h_to_12h(date_time: RtcDateTime) -> RtcDateTime {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_check_battery_periodically(state: *mut ClockState, date_time: RtcDateTime) {
+pub extern "C" fn clock_check_battery_periodically(
+    state: *mut ClockState,
+    date_time: &RtcDateTime,
+) {
     unsafe {
-        let dt: WatchDateTime = date_time.into();
+        let dt: WatchDateTime = (*date_time).into();
 
         // check the battery voltage once a day
         if dt.day == (*state).last_battery_check {
@@ -249,8 +252,8 @@ pub extern "C" fn clock_toggle_time_signal(state: *mut ClockState) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_display_all(date_time: RtcDateTime) {
-    let dt: WatchDateTime = date_time.into();
+pub extern "C" fn clock_display_all(date_time: &RtcDateTime) {
+    let dt: WatchDateTime = (*date_time).into();
 
     let mut date_time_s: String<8> = String::new();
 
@@ -278,8 +281,8 @@ pub extern "C" fn clock_display_all(date_time: RtcDateTime) {
 
         watch_display_text_with_fallback(
             WatchPosition::TopLeft,
-            watch_utility_get_long_weekday(date_time),
-            watch_utility_get_weekday(date_time),
+            watch_utility_get_long_weekday(*date_time),
+            watch_utility_get_weekday(*date_time),
         );
 
         watch_display_text(WatchPosition::TopRight, c_buf.as_ptr() as *const c_char);
@@ -324,15 +327,15 @@ pub extern "C" fn clock_display_some(current: &RtcDateTime, previous: &RtcDateTi
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_display_clock(state: *mut ClockState, current: &mut RtcDateTime) {
+pub extern "C" fn clock_display_clock(state: *mut ClockState, mut current: RtcDateTime) {
     unsafe {
-        if !clock_display_some(current, &(*state).previous) {
+        if !clock_display_some(&current, &(*state).previous) {
             if movement_clock_mode_24h() == MovementClockMode::Mode12h {
-                clock_indicate_pm(current);
-                *current = clock_24h_to_12h(*current);
+                clock_indicate_pm(&current);
+                current = clock_24h_to_12h(current);
             }
         }
 
-        clock_display_all(*current);
+        clock_display_all(&current);
     }
 }
