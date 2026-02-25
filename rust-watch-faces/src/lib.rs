@@ -143,6 +143,7 @@ unsafe extern "C" {
     fn watch_display_text(position: WatchPosition, text: *const c_char);
     fn watch_utility_get_weekday(date_time: RtcDateTime) -> *const c_char;
     fn watch_utility_get_long_weekday(date_time: RtcDateTime) -> *const c_char;
+    fn watch_display_character_lp_seconds(character: u8, position: u8);
 }
 
 #[unsafe(no_mangle)]
@@ -190,10 +191,10 @@ pub extern "C" fn clock_indicate_pm(date_time: RtcDateTime) {
         if movement_clock_mode_24h() == MovementClockMode::Mode24h {
             return;
         }
-        let dt: WatchDateTime = date_time.into();
-        clock_indicate(WatchIndicator::Pm, dt.hour >= 12);
+        clock_indicate(WatchIndicator::Pm, clock_is_pm(date_time.into()));
     }
 }
+
 pub fn clock_indicate_low_available_power(state: ClockState) {
     unsafe {
         match watch_get_lcd_type() {
@@ -221,6 +222,7 @@ pub extern "C" fn clock_check_battery_periodically(state: *mut ClockState, date_
     unsafe {
         let dt: WatchDateTime = date_time.into();
 
+        // check the battery voltage once a day
         if dt.day == (*state).last_battery_check {
             return;
         }
@@ -263,7 +265,7 @@ pub extern "C" fn clock_display_all(date_time: RtcDateTime) {
             .ok();
         }
 
-        let mut c_buf = [0u8; 9];
+        let mut c_buf = [0u8; 9]; // 8 + 1 
 
         let bytes = date_time_s.as_bytes();
         c_buf[..bytes.len()].copy_from_slice(bytes);
@@ -284,6 +286,33 @@ pub extern "C" fn clock_display_all(date_time: RtcDateTime) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_display_some(currentt: RtcDateTime, previous: RtcDateTime) {
-    unsafe {}
+pub extern "C" fn clock_display_some(current: RtcDateTime, previous: RtcDateTime) -> bool {
+    unsafe {
+        let dt: WatchDateTime = current.into();
+
+        if current.reg >> 6 == previous.reg >> 6 {
+            watch_display_character_lp_seconds(b'0' + dt.second / 10, 8);
+            watch_display_character_lp_seconds(b'0' + dt.second % 10, 9);
+            true
+        } else if current.reg >> 12 == previous.reg >> 12 {
+            let mut date_time_s: String<4> = String::new();
+
+            write!(date_time_s, "{:02}{:02}", dt.minute, dt.second).ok();
+
+            let mut c_buf = [0u8; 5]; // 4 + 1 
+
+            let bytes = date_time_s.as_bytes();
+            c_buf[..bytes.len()].copy_from_slice(bytes);
+
+            watch_display_text(WatchPosition::Minutes, c_buf.as_ptr() as *const c_char);
+
+            watch_display_text(
+                WatchPosition::Seconds,
+                c_buf.as_ptr().add(2) as *const c_char,
+            );
+            true
+        } else {
+            false
+        }
+    }
 }
