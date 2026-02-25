@@ -77,12 +77,16 @@ impl From<WatchDateTime> for RtcDateTime {
         }
     }
 }
+
 #[derive(Copy, Clone)]
+#[repr(C)]
 pub struct ClockState {
     time_signal_enabled: bool,
     alarm_enabled: bool,
     battery_low: bool,
     last_battery_check: u8,
+    previous: RtcDateTime,
+    watch_face_enabled: bool,
 }
 
 #[repr(C)]
@@ -186,12 +190,12 @@ pub fn clock_is_pm(date_time: WatchDateTime) -> bool {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_indicate_pm(date_time: RtcDateTime) {
+pub extern "C" fn clock_indicate_pm(date_time: &RtcDateTime) {
     unsafe {
         if movement_clock_mode_24h() == MovementClockMode::Mode24h {
             return;
         }
-        clock_indicate(WatchIndicator::Pm, clock_is_pm(date_time.into()));
+        clock_indicate(WatchIndicator::Pm, clock_is_pm((*date_time).into()));
     }
 }
 
@@ -208,13 +212,15 @@ pub fn clock_indicate_low_available_power(state: ClockState) {
     }
 }
 
-pub fn clock_24h_to_12h(mut date_time: WatchDateTime) -> WatchDateTime {
-    date_time.hour %= 12;
+pub fn clock_24h_to_12h(date_time: RtcDateTime) -> RtcDateTime {
+    let mut dt: WatchDateTime = date_time.into();
+    dt.hour %= 12;
 
-    if date_time.hour == 0 {
-        date_time.hour = 12;
+    if dt.hour == 0 {
+        dt.hour = 12;
     }
-    date_time
+
+    dt.into()
 }
 
 #[unsafe(no_mangle)]
@@ -314,5 +320,19 @@ pub extern "C" fn clock_display_some(current: &RtcDateTime, previous: &RtcDateTi
         } else {
             false
         }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn clock_display_clock(state: *mut ClockState, current: &mut RtcDateTime) {
+    unsafe {
+        if !clock_display_some(current, &(*state).previous) {
+            if movement_clock_mode_24h() == MovementClockMode::Mode12h {
+                clock_indicate_pm(current);
+                *current = clock_24h_to_12h(*current);
+            }
+        }
+
+        clock_display_all(*current);
     }
 }
