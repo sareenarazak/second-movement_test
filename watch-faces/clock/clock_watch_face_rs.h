@@ -14,5 +14,5 @@ void clock_check_battery_periodically(clock_state_t *state, watch_date_time_t da
 
 void clock_toggle_time_signal(clock_state_t *state);
 void clock_display_all(watch_date_time_t date_time);
-
+bool clock_display_some(watch_date_time_t current, watch_date_time_t previous);
 #endif // CLOCK_WATCHFACE_RS_H
