@@ -286,15 +286,15 @@ pub extern "C" fn clock_display_all(date_time: RtcDateTime) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn clock_display_some(current: RtcDateTime, previous: RtcDateTime) -> bool {
+pub extern "C" fn clock_display_some(current: &RtcDateTime, previous: &RtcDateTime) -> bool {
     unsafe {
-        let dt: WatchDateTime = current.into();
+        let dt: WatchDateTime = (*current).into();
 
-        if current.reg >> 6 == previous.reg >> 6 {
+        if (*current).reg >> 6 == (*previous).reg >> 6 {
             watch_display_character_lp_seconds(b'0' + dt.second / 10, 8);
             watch_display_character_lp_seconds(b'0' + dt.second % 10, 9);
             true
-        } else if current.reg >> 12 == previous.reg >> 12 {
+        } else if (*current).reg >> 12 == (*previous).reg >> 12 {
             let mut date_time_s: String<4> = String::new();
 
             write!(date_time_s, "{:02}{:02}", dt.minute, dt.second).ok();
